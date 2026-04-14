@@ -1,0 +1,129 @@
+import random
+
+# Card values
+values = {
+    "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+    "J": 10, "Q": 10, "K": 10, "A": 11
+}
+suits = ["♠", "♥", "♦", "♣"]
+ranks = list(values.keys())
+
+
+def deal_card():
+    rank = random.choice(ranks)
+    suit = random.choice(suits)
+    return rank + suit
+
+
+def hand_value(hand):
+    total = 0
+    aces = 0
+    for card in hand:
+        rank = card[:-1]
+        total += values[rank]
+        if rank == "A":
+            aces += 1
+    while total > 21 and aces:
+        total -= 10
+        aces -= 1
+    return total
+
+
+def show_hands(player, dealer, hide_dealer=True):
+    print("\nYour hand:", "  ".join(player), f" (total: {hand_value(player)})")
+    if hide_dealer:
+        print("Dealer hand:", dealer[0], "??")
+    else:
+        print("Dealer hand:", "  ".join(dealer), f" (total: {hand_value(dealer)})")
+
+
+def play_round():
+    deck_used = set()
+    def draw_unique():
+        card = deal_card()
+        while card in deck_used:
+            card = deal_card()
+        deck_used.add(card)
+        return card
+
+    player = [draw_unique(), draw_unique()]
+    dealer = [draw_unique(), draw_unique()]
+
+    print("\n=== NEW ROUND: BLACKJACK ===")
+    show_hands(player, dealer, hide_dealer=True)
+
+    # Player turn
+    while True:
+        if hand_value(player) == 21:
+            print("Blackjack! You stand.")
+            break
+        choice = input("\nHit or stand? (h/s): ").strip().lower()
+        if choice == "h":
+            player.append(draw_unique())
+            show_hands(player, dealer, hide_dealer=True)
+            if hand_value(player) > 21:
+                print("\nYou bust! Dealer wins.")
+                return -1
+        elif choice == "s":
+            break
+        else:
+            print("Please type 'h' or 's'.")
+
+    # Dealer turn
+    print("\nDealer reveals cards...")
+    show_hands(player, dealer, hide_dealer=False)
+    while hand_value(dealer) < 17:
+        input("Dealer hits. Press Enter...")
+        dealer.append(draw_unique())
+        show_hands(player, dealer, hide_dealer=False)
+        if hand_value(dealer) > 21:
+            print("\nDealer busts! You win!")
+            return 1
+
+    # Compare
+    p_val = hand_value(player)
+    d_val = hand_value(dealer)
+    print("\nFinal totals:")
+    print("You:", p_val, " | Dealer:", d_val)
+
+    if p_val > d_val:
+        print("You win!")
+        return 1
+    elif p_val < d_val:
+        print("Dealer wins!")
+        return -1
+    else:
+        print("Push (tie).")
+        return 0
+
+
+def main():
+    balance = 100
+    print("Welcome to Blackjack! You start with $100.")
+    while True:
+        print(f"\nCurrent balance: ${balance}")
+        bet_input = input("Place your bet (or type 'q' to quit): ").strip().lower()
+        if bet_input == "q":
+            print(f"\nYou leave the table with ${balance}. Thanks for playing!")
+            break
+        if not bet_input.isdigit():
+            print("Enter a number or 'q' to quit.")
+            continue
+        bet = int(bet_input)
+        if bet <= 0 or bet > balance:
+            print("Invalid bet amount.")
+            continue
+
+        result = play_round()
+        if result == 1:
+            balance += bet
+        elif result == -1:
+            balance -= bet
+
+        if balance <= 0:
+            print("\nYou're out of money! Game over.")
+            break
+
+
+if __name__ == "__main__":
+    main()
